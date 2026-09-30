@@ -20,7 +20,7 @@ jobs:
     # Ubuntu 24.04
     runs-on: ubuntu-24.04
     environment: Release-plz
-    if: ${{ github.repository_owner == 'kuestcom' }}
+    if: ${{ github.repository_owner == 'kuest' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3

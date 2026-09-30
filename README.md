@@ -4,7 +4,7 @@
 </h1>
 
 [![Crates.io](https://img.shields.io/crates/v/kuest-client-sdk.svg)](https://crates.io/crates/kuest-client-sdk)
-[![PR](https://github.com/kuestcom/rs-clob-client/actions/workflows/pr.yml/badge.svg)](https://github.com/kuestcom/rs-clob-client/actions/workflows/pr.yml)
+[![PR](https://github.com/kuest/rs-clob-client/actions/workflows/pr.yml/badge.svg)](https://github.com/kuest/rs-clob-client/actions/workflows/pr.yml)
 
 ## Read-Only Client
 

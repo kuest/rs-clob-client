@@ -4,7 +4,7 @@ All contributions to the `rs-clob-client` are welcome and greatly appreciated! T
 
 ## Steps to get started
 
-1. Fork `kuestcom/rs-clob-client`
+1. Fork `kuest/rs-clob-client`
 2. Clone your fork
 3. Install [pre-commit](https://pre-commit.com/#intro)
 4. Open pull requests against the `main` branch and fill the PR template.

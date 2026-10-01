@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.18](https://github.com/kuest/rs-clob-client/compare/v2.0.17...v2.0.18) - 2026-10-01
+
+### Fixed
+
+- update GitHub organization references
+
 ## [2.0.8](https://github.com/kuest/rs-clob-client/compare/v2.0.7...v2.0.8) - 2026-06-14
 
 ### Fixed

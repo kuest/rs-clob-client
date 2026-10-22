@@ -3,7 +3,7 @@ use serde::Deserialize;
 use serde_json::Value;
 use serde_with::{DefaultOnNull, DisplayFromStr, NoneAsEmptyString, serde_as};
 #[cfg(feature = "tracing")]
-use tracing::warn;
+use tracing::error;
 
 use crate::auth::ApiKey;
 use crate::clob::types::{OrderStatusType, Side, TraderSide};
@@ -292,9 +292,9 @@ pub struct MakerOrder {
     /// Maker order ID
     pub order_id: String,
     /// Outcome (Yes/No)
-    pub outcome: String,
-    /// Owner (API key) of maker order
-    pub owner: ApiKey,
+    pub outcome: Option<String>,
+    /// Maker user ID (ULID), or maker address for orders without a user ID.
+    pub owner: String,
     /// Price of maker order
     pub price: Decimal,
 }
@@ -526,13 +526,11 @@ pub fn parse_if_interested(
                 }
 
                 serde_json::from_value(elem.clone())
-                    .inspect_err(|err| {
+                    .inspect_err(|_| {
                         #[cfg(feature = "tracing")]
-                        warn!(
-                            event_type = %event_type,
-                            error = %err,
-                            "Skipping unknown/invalid WS event in batch"
-                        );
+                        error!("Discarding invalid WebSocket event in batch");
+                        #[cfg(not(feature = "tracing"))]
+                        eprintln!("kuest-client-sdk: discarding invalid WebSocket event in batch");
                     })
                     .ok()
             })

@@ -397,8 +397,11 @@ pub struct OpenOrderResponse {
     pub id: String,
     pub status: OrderStatusType,
     /// The user ID (ULID) associated with the order.
-    #[serde(deserialize_with = "crate::serde_helpers::deserialize_ulid_string")]
-    pub owner: String,
+    #[serde(
+        default,
+        deserialize_with = "crate::serde_helpers::deserialize_optional_ulid_string"
+    )]
+    pub owner: Option<String>,
     pub maker_address: Address,
     /// The market condition ID.
     pub market: B256,
@@ -406,11 +409,11 @@ pub struct OpenOrderResponse {
     pub side: Side,
     pub original_size: Decimal,
     pub size_matched: Decimal,
-    pub price: Decimal,
+    pub price: Option<Decimal>,
     #[serde(default)]
     #[serde_as(deserialize_as = "DefaultOnNull")]
     pub associate_trades: Vec<String>,
-    pub outcome: String,
+    pub outcome: Option<String>,
     #[serde(deserialize_with = "crate::serde_helpers::deserialize_datetime_from_unix_or_rfc3339")]
     pub created_at: DateTime<Utc>,
     #[serde_as(as = "TimestampSeconds<String>")]
@@ -449,19 +452,21 @@ pub struct TradeResponse {
     pub fee_rate_bps: Decimal,
     pub price: Decimal,
     pub status: TradeStatusType,
-    #[serde_as(as = "TimestampSeconds<String>")]
+    #[serde(deserialize_with = "crate::serde_helpers::deserialize_datetime_from_unix_or_rfc3339")]
     pub match_time: DateTime<Utc>,
-    #[serde_as(as = "TimestampSeconds<String>")]
+    #[serde(deserialize_with = "crate::serde_helpers::deserialize_datetime_from_unix_or_rfc3339")]
     pub last_update: DateTime<Utc>,
-    pub outcome: String,
+    pub outcome: Option<String>,
     pub bucket_index: u32,
-    pub owner: ApiKey,
+    /// Taker account identifier (ULID when available, empty for legacy trades).
+    pub owner: String,
     pub maker_address: Address,
     #[serde(default)]
     #[serde_as(deserialize_as = "DefaultOnNull")]
     pub maker_orders: Vec<MakerOrder>,
     /// On-chain transaction hash.
-    pub transaction_hash: B256,
+    pub transaction_hash: Option<B256>,
+    #[serde(rename = "type", alias = "trader_side")]
     pub trader_side: TraderSide,
     #[serde(default)]
     pub error_msg: Option<String>,
@@ -572,13 +577,14 @@ pub struct UserInfo {
 #[builder(on(String, into))]
 pub struct MakerOrder {
     pub order_id: String,
-    pub owner: ApiKey,
+    /// Maker account identifier (ULID when available, empty for legacy trades).
+    pub owner: String,
     pub maker_address: Address,
     pub matched_amount: Decimal,
     pub price: Decimal,
     pub fee_rate_bps: Decimal,
     pub asset_id: U256,
-    pub outcome: String,
+    pub outcome: Option<String>,
     pub side: Side,
 }
 

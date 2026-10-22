@@ -2151,38 +2151,37 @@ mod authenticated {
                         "fee_rate_bps": "5",
                         "price": "0.42",
                         "status": "MATCHED",
-                        "match_time": "1705322096",
-                        "last_update": "1705322130",
-                        "outcome": "YES",
+                        "match_time": "2024-01-15T12:34:56Z",
+                        "last_update": "2024-01-15T12:35:30Z",
+                        "outcome": null,
                         "bucket_index": 2,
-                        "owner": "ffffffff-ffff-ffff-ffff-ffffffffffff",
+                        "owner": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
                         "maker_address": "0x2222222222222222222222222222222222222222",
                         "maker_orders": [
                             {
                                 "order_id": "maker_001",
-                                "owner": "ffffffff-ffff-ffff-ffff-ffffffffffff",
+                                "owner": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
                                 "maker_address": "0x4444444444444444444444444444444444444444",
                                 "matched_amount": "5.0",
                                 "price": "0.42",
                                 "fee_rate_bps": "5",
                                 "asset_id": token_1(),
-                                "outcome": "YES",
-                                "side": "SELL"
+                                "outcome": null,
+                                "side": "sell"
                             },
                             {
                                 "order_id": "maker_002",
-                                "owner": "ffffffff-ffff-ffff-ffff-ffffffffffff",
+                                "owner": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
                                 "maker_address": "0x6666666666666666666666666666666666666666",
                                 "matched_amount": "7.5",
                                 "price": "0.42",
                                 "fee_rate_bps": "5",
                                 "asset_id": token_1(),
-                                "outcome": "YES",
-                                "side": "SELL"
+                                "outcome": null,
+                                "side": "sell"
                             }
                         ],
-                        "transaction_hash": "0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd",
-                        "trader_side": "TAKER"
+                        "type": "TAKER"
                     }
                 ],
                 "limit": 1,
@@ -2213,37 +2212,31 @@ mod authenticated {
             .status(TradeStatusType::Matched)
             .match_time("2024-01-15T12:34:56Z".parse().unwrap())
             .last_update("2024-01-15T12:35:30Z".parse().unwrap())
-            .outcome("YES")
             .bucket_index(2)
-            .owner(Uuid::max())
+            .owner("01ARZ3NDEKTSV4RRFFQ69G5FAV")
             .maker_address(address!("0x2222222222222222222222222222222222222222"))
             .maker_orders(vec![
                 MakerOrder::builder()
                     .order_id("maker_001")
-                    .owner(Uuid::max())
+                    .owner("01ARZ3NDEKTSV4RRFFQ69G5FAV")
                     .maker_address(address!("0x4444444444444444444444444444444444444444"))
                     .matched_amount(dec!(5.0))
                     .price(dec!(0.42))
                     .fee_rate_bps(dec!(5))
                     .asset_id(token_1())
-                    .outcome("YES")
                     .side(Side::Sell)
                     .build(),
                 MakerOrder::builder()
                     .order_id("maker_002")
-                    .owner(Uuid::max())
+                    .owner("01ARZ3NDEKTSV4RRFFQ69G5FAV")
                     .maker_address(address!("0x6666666666666666666666666666666666666666"))
                     .matched_amount(dec!(7.5))
                     .price(dec!(0.42))
                     .fee_rate_bps(dec!(5))
                     .asset_id(token_1())
-                    .outcome("YES")
                     .side(Side::Sell)
                     .build(),
             ])
-            .transaction_hash(b256!(
-                "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd"
-            ))
             .trader_side(TraderSide::Taker)
             .build();
         let expected = Page::builder()

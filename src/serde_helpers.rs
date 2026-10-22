@@ -101,6 +101,21 @@ where
 }
 
 #[cfg(feature = "clob")]
+pub(crate) fn deserialize_optional_ulid_string<'de, D>(
+    deserializer: D,
+) -> std::result::Result<Option<String>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::Deserialize as _;
+    use serde::de::value::StringDeserializer;
+
+    Option::<String>::deserialize(deserializer)?
+        .map(|value| deserialize_ulid_string(StringDeserializer::<D::Error>::new(value)))
+        .transpose()
+}
+
+#[cfg(feature = "clob")]
 pub(crate) fn deserialize_datetime_from_unix_or_rfc3339<'de, D>(
     deserializer: D,
 ) -> std::result::Result<chrono::DateTime<chrono::Utc>, D::Error>

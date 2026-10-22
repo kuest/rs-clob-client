@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0](https://github.com/kuest/rs-clob-client/compare/v2.0.18...v3.0.0) - 2026-10-22
+
+### Changed
+
+- Read Kuest trade account owners as strings while keeping WebSocket subscription owners as API-key UUIDs. Open-order owners are optional ULIDs, and trade outcomes and transaction hashes may be absent. These response type changes require consumers to update their Rust code.
+- Accept the CLOB's RFC3339 trade times and `type` perspective field, while retaining epoch times and `trader_side` as input aliases.
+- Report discarded WebSocket messages without logging payloads or credentials.
+
 ## [2.0.18](https://github.com/kuest/rs-clob-client/compare/v2.0.17...v2.0.18) - 2026-09-30
 
 ### Fixed

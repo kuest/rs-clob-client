@@ -253,22 +253,22 @@ where
                         }
                         Ok(Message::Text(text)) => {
                             #[cfg(feature = "tracing")]
-                            tracing::trace!(%text, "Received WebSocket text message");
+                            tracing::trace!(bytes = text.len(), "Received WebSocket text message");
 
                             // Parse messages using the provided parser
                             match parser.parse(text.as_bytes()) {
                                 Ok(messages) => {
                                     for message in messages {
                                         #[cfg(feature = "tracing")]
-                                        tracing::trace!(?message, "Parsed WebSocket message");
+                                        tracing::trace!("Parsed WebSocket message");
                                         _ = broadcast_tx.send(message);
                                     }
                                 }
-                                Err(e) => {
+                                Err(_error) => {
                                     #[cfg(feature = "tracing")]
-                                    tracing::warn!(%text, error = %e, "Failed to parse WebSocket message");
+                                    tracing::error!("Discarding invalid WebSocket message");
                                     #[cfg(not(feature = "tracing"))]
-                                    let _: (&_, &_) = (&text, &e);
+                                    eprintln!("kuest-client-sdk: discarding invalid WebSocket message");
                                 }
                             }
                         }

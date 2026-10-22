@@ -722,43 +722,8 @@ pub struct BuilderApiKeyResponse {
     pub revoked_at: Option<DateTime<Utc>>,
 }
 
-#[non_exhaustive]
-#[serde_as]
-#[derive(Debug, Clone, Deserialize, Builder, PartialEq)]
-#[serde(rename_all = "camelCase")]
-#[builder(on(String, into))]
-pub struct BuilderTradeResponse {
-    pub id: String,
-    pub trade_type: String,
-    /// Hash of the taker order.
-    pub taker_order_hash: B256,
-    /// Address of the builder.
-    pub builder: Address,
-    /// The market condition ID.
-    pub market: B256,
-    pub asset_id: U256,
-    pub side: Side,
-    pub size: Decimal,
-    pub size_usdc: Decimal,
-    pub price: Decimal,
-    pub status: TradeStatusType,
-    pub outcome: String,
-    pub outcome_index: u32,
-    pub owner: ApiKey,
-    /// Address of the maker.
-    pub maker: Address,
-    /// On-chain transaction hash.
-    pub transaction_hash: B256,
-    #[serde_as(as = "TimestampSeconds<String>")]
-    pub match_time: DateTime<Utc>,
-    pub bucket_index: u32,
-    pub fee: Decimal,
-    pub fee_usdc: Decimal,
-    #[serde(alias = "err_msg")]
-    pub err_msg: Option<String>,
-    pub created_at: Option<DateTime<Utc>>,
-    pub updated_at: Option<DateTime<Utc>>,
-}
+/// A trade returned by `/builder/trades`, which uses the CLOB trade response shape.
+pub type BuilderTradeResponse = TradeResponse;
 
 #[non_exhaustive]
 #[derive(Debug, Clone, Deserialize, Builder, PartialEq)]

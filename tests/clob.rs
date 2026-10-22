@@ -3076,11 +3076,9 @@ mod builder_authenticated {
     use httpmock::Method::DELETE;
     use kuest_client_sdk::auth::builder::Config as BuilderConfig;
     use kuest_client_sdk::clob::types::request::TradesRequest;
-    use kuest_client_sdk::clob::types::response::{
-        BuilderApiKeyResponse, BuilderTradeResponse, Page,
-    };
-    use kuest_client_sdk::clob::types::{Side, TradeStatusType};
-    use kuest_client_sdk::types::{address, b256};
+    use kuest_client_sdk::clob::types::response::BuilderApiKeyResponse;
+    use kuest_client_sdk::clob::types::{Side, TradeStatusType, TraderSide};
+    use kuest_client_sdk::types::b256;
 
     use super::*;
     use crate::common::{
@@ -3316,28 +3314,33 @@ mod builder_authenticated {
                 "data": [
                     {
                         "id": "1",
-                        "tradeType": "limit",
-                        "takerOrderHash": "0x0000000000000000000000000000000000000000000000000074616b65726f72",
-                        "builder": "0x00000000000000000000000000006275696c6431",
+                        "taker_order_id": "taker-order-1",
                         "market": "0x000000000000000000000000000000000000000000000000000000006d61726b",
-                        "assetId": token_1(),
+                        "asset_id": token_1(),
                         "side": "buy",
                         "size": "10.0",
-                        "sizeUsdc": "100.0",
+                        "fee_rate_bps": "10",
                         "price": "0.45",
                         "status": "MATCHED",
                         "outcome": "YES",
-                        "outcomeIndex": 0,
-                        "owner": "ffffffff-ffff-ffff-ffff-ffffffffffff",
-                        "maker": "0x2222222222222222222222222222222222222222",
-                        "transactionHash": "0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd",
-                        "matchTime": "1758579597",
-                        "bucketIndex": 3,
-                        "fee": "0.1",
-                        "feeUsdc": "1.0",
-                        "err_msg": "partial fill due to liquidity",
-                        "createdAt": "2024-01-15T12:30:00Z",
-                        "updatedAt": "2024-01-15T12:35:00Z"
+                        "owner": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                        "maker_address": "0x2222222222222222222222222222222222222222",
+                        "transaction_hash": "0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+                        "match_time": "2025-09-22T22:19:57Z",
+                        "last_update": "2025-09-22T22:19:57Z",
+                        "bucket_index": 0,
+                        "maker_orders": [{
+                            "order_id": "maker-order-1",
+                            "maker_address": "0x2222222222222222222222222222222222222222",
+                            "owner": "01ARZ3NDEKTSV4RRFFQ69G5FAW",
+                            "matched_amount": "10.0",
+                            "fee_rate_bps": "10",
+                            "price": "0.45",
+                            "asset_id": token_1(),
+                            "outcome": "YES",
+                            "side": "sell"
+                        }],
+                        "type": "MAKER"
                     }
                 ],
                 "limit": 1,
@@ -3354,45 +3357,17 @@ mod builder_authenticated {
             .build();
         let response = client.builder_trades(builder_code, &request, None).await?;
 
-        let trade = BuilderTradeResponse::builder()
-            .id("1")
-            .trade_type("limit")
-            .taker_order_hash(b256!(
-                "0000000000000000000000000000000000000000000000000074616b65726f72"
-            ))
-            .builder(address!("00000000000000000000000000006275696c6431"))
-            .market(b256!(
-                "000000000000000000000000000000000000000000000000000000006d61726b"
-            ))
-            .asset_id(token_1())
-            .side(Side::Buy)
-            .size(dec!(10.0))
-            .size_usdc(dec!(100.0))
-            .price(dec!(0.45))
-            .status(TradeStatusType::Matched)
-            .outcome("YES")
-            .outcome_index(0)
-            .owner(Uuid::max())
-            .maker(address!("2222222222222222222222222222222222222222"))
-            .transaction_hash(b256!(
-                "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd"
-            ))
-            .match_time("2025-09-22T22:19:57Z".parse()?)
-            .bucket_index(3)
-            .fee(dec!(0.1))
-            .fee_usdc(dec!(1.0))
-            .err_msg("partial fill due to liquidity")
-            .created_at("2024-01-15T12:30:00Z".parse()?)
-            .updated_at("2024-01-15T12:35:00Z".parse()?)
-            .build();
-        let expected = Page::builder()
-            .limit(1)
-            .count(1)
-            .data(vec![trade])
-            .next_cursor("next")
-            .build();
-
-        assert_eq!(response, expected);
+        assert_eq!(response.count, 1);
+        assert_eq!(response.next_cursor, "next");
+        assert_eq!(response.data.len(), 1);
+        let trade = &response.data[0];
+        assert_eq!(trade.id, "1");
+        assert_eq!(trade.owner, "01ARZ3NDEKTSV4RRFFQ69G5FAV");
+        assert_eq!(trade.side, Side::Buy);
+        assert_eq!(trade.status, TradeStatusType::Matched);
+        assert_eq!(trade.trader_side, TraderSide::Maker);
+        assert_eq!(trade.maker_orders.len(), 1);
+        assert_eq!(trade.maker_orders[0].owner, "01ARZ3NDEKTSV4RRFFQ69G5FAW");
         mock.assert();
         mock2.assert_calls(3);
         mock3.assert();

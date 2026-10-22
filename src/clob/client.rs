@@ -2602,7 +2602,7 @@ impl<K: Kind> Client<Authenticated<K>> {
         Ok(())
     }
 
-    /// Returns trades attributed to `builder_code`.
+    /// Returns trades from `/builder/trades` in the CLOB trade response shape.
     ///
     /// # Errors
     ///

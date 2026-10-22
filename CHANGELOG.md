@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.0.0](https://github.com/kuest/rs-clob-client/compare/v3.0.0...v4.0.0) - 2026-10-22
+
+### Fixed
+
+- *(clob)* [**breaking**] align builder trades with CLOB response
+
 ## [3.0.0](https://github.com/kuest/rs-clob-client/compare/v2.0.18...v3.0.0) - 2026-10-22
 
 ### Changed

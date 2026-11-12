@@ -12,6 +12,8 @@ pub mod data;
 pub mod error;
 #[cfg(feature = "gamma")]
 pub mod gamma;
+#[cfg(feature = "realtime")]
+pub mod realtime;
 #[cfg(feature = "rtds")]
 pub mod rtds;
 #[cfg(any(feature = "clob", feature = "gamma"))]

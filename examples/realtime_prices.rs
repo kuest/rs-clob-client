@@ -14,5 +14,5 @@ async fn main() -> anyhow::Result<()> {
             Err(error) => writeln!(io::stderr(), "{error}")?,
         }
     }
-    Ok(())
+    anyhow::bail!("Live price stream terminated")
 }

@@ -84,7 +84,7 @@ impl Subscription {
             "price.crypto.twap" | "price.equity.twap"
         ) {
             if self.filter.window_seconds != Some(60)
-                || self.filter.provider.as_deref() == Some("pyth")
+                || self.filter.provider.as_deref() != Some("chainlink")
             {
                 return Err(Error::validation(
                     "TWAP requires a 60-second Chainlink feed",
@@ -250,7 +250,14 @@ impl Client {
 }
 
 fn validate_source(subscription: &Subscription, payload: &Value) -> Result<()> {
-    if payload["symbol"] != subscription.filter.symbol {
+    let symbol = &subscription.filter.symbol;
+    if let Some(points) = payload["data"].as_array() {
+        if payload.get("symbol").is_some_and(|value| value != symbol)
+            || points.iter().any(|point| point["symbol"] != *symbol)
+        {
+            return Err(Error::validation("Live price symbol mismatch"));
+        }
+    } else if payload["symbol"] != *symbol {
         return Err(Error::validation("Live price symbol mismatch"));
     }
     if subscription
@@ -288,13 +295,13 @@ mod tests {
                         .unwrap();
                 }
                 while let Some(Ok(message)) = socket.next().await {
-                    if let Message::Text(text) = message {
-                        if serde_json::from_str::<Value>(&text).unwrap()["op"] == "ping" {
-                            socket
-                                .send(Message::Text(json!({"op":"pong"}).to_string().into()))
-                                .await
-                                .unwrap();
-                        }
+                    if let Message::Text(text) = message
+                        && serde_json::from_str::<Value>(&text).unwrap()["op"] == "ping"
+                    {
+                        socket
+                            .send(Message::Text(json!({"op":"pong"}).to_string().into()))
+                            .await
+                            .unwrap();
                     }
                 }
             }
@@ -310,7 +317,7 @@ mod tests {
                 stream.next().await.unwrap().unwrap(),
                 Event::Price(_)
             ));
-            assert!(stream.next().await.unwrap().is_err());
+            stream.next().await.unwrap().unwrap_err();
             assert!(matches!(
                 stream.next().await.unwrap().unwrap(),
                 Event::Price(_)
@@ -347,6 +354,8 @@ mod tests {
         sub.filter.window_seconds = Some(30);
         assert!(sub.validate().is_err());
         sub.filter.window_seconds = Some(60);
+        sub.filter.provider = None;
+        assert!(sub.validate().is_err());
         sub.filter.provider = Some("binance".into());
         assert!(sub.validate().is_err());
     }
@@ -359,5 +368,10 @@ mod tests {
         );
         assert_eq!(frame.payload["source"], "chainlink");
         assert!(frame.snapshot);
+        let subscription = Subscription::crypto("btcusd", Some("chainlink"));
+        validate_source(&subscription, &frame.payload).unwrap();
+        let mut mismatched = frame.payload;
+        mismatched["data"][0]["symbol"] = json!("ethusd");
+        assert!(validate_source(&subscription, &mismatched).is_err());
     }
 }

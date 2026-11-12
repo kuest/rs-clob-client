@@ -106,7 +106,16 @@ impl Serialize for Subscription {
     where
         S: serde::Serializer,
     {
-        use serde::ser::SerializeMap as _;
+        use serde::ser::{Error as _, SerializeMap as _};
+
+        if matches!(
+            self.topic.as_str(),
+            "crypto_prices" | "crypto_prices_chainlink"
+        ) {
+            return Err(S::Error::custom(
+                "Price subscriptions require the realtime client",
+            ));
+        }
 
         let mut map = serializer.serialize_map(None)?;
 
@@ -141,6 +150,19 @@ impl Serialize for Subscription {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn rejects_removed_price_topics() {
+        for topic in ["crypto_prices", "crypto_prices_chainlink"] {
+            let subscription = Subscription {
+                topic: topic.into(),
+                msg_type: "*".into(),
+                filters: None,
+                clob_auth: None,
+            };
+            serde_json::to_value(subscription).unwrap_err();
+        }
+    }
+
     #[test]
     fn comments_keep_community_protocol() {
         let request = SubscriptionRequest::subscribe(vec![Subscription::comments(None)]);

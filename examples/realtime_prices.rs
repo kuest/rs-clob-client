@@ -1,3 +1,5 @@
+use std::io::{self, Write as _};
+
 use futures::StreamExt as _;
 use kuest_client_sdk::realtime::{Client, Subscription};
 
@@ -7,7 +9,10 @@ async fn main() -> anyhow::Result<()> {
     let stream = client.subscribe(Subscription::crypto("btcusd", Some("chainlink")))?;
     futures::pin_mut!(stream);
     while let Some(frame) = stream.next().await {
-        println!("{:?}", frame?);
+        match frame {
+            Ok(event) => writeln!(io::stdout(), "{event:?}")?,
+            Err(error) => writeln!(io::stderr(), "{error}")?,
+        }
     }
     Ok(())
 }

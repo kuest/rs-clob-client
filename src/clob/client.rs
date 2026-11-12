@@ -1979,13 +1979,15 @@ impl<K: Kind> Client<Authenticated<K>> {
     /// Retrieves a paginated list of orders matching the specified criteria.
     ///
     /// Asset filters require the market condition ID.
+    ///
     /// Returns orders filtered by token ID, market condition, or other parameters
     /// specified in the request. Use the `next_cursor` from the response to fetch
     /// subsequent pages.
     ///
     /// # Errors
     ///
-    /// Returns an error if the request fails.
+    /// Returns a validation error if `asset_id` is set without `market`,
+    /// or an error if the request fails.
     pub async fn orders(
         &self,
         request: &OrdersRequest,

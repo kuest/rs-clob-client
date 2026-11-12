@@ -1946,6 +1946,46 @@ mod authenticated {
     }
 
     #[tokio::test]
+    async fn orders_asset_filter_requires_market() -> anyhow::Result<()> {
+        let server = MockServer::start();
+        let client = create_authenticated(&server).await?;
+        let mock = server.mock(|when, then| {
+            when.method(GET).path("/data/orders");
+            then.status(StatusCode::OK).json_body(json!({
+                "data": [], "limit": 0, "count": 0, "next_cursor": "LTE="
+            }));
+        });
+        let request = OrdersRequest::builder().asset_id(token_1()).build();
+        let error = client.orders(&request, None).await.unwrap_err();
+        assert!(error.to_string().contains("market is required"));
+        mock.assert_calls(0);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn orders_asset_and_market_filter_should_succeed() -> anyhow::Result<()> {
+        let server = MockServer::start();
+        let client = create_authenticated(&server).await?;
+        let market = b256!("000000000000000000000000000000000000000000000000006d61726b657461");
+        let mock = server.mock(|when, then| {
+            when.method(GET)
+                .path("/data/orders")
+                .query_param("asset_id", token_1().to_string())
+                .query_param("market", market.to_string());
+            then.status(StatusCode::OK).json_body(json!({
+                "data": [], "limit": 0, "count": 0, "next_cursor": "LTE="
+            }));
+        });
+        let request = OrdersRequest::builder()
+            .asset_id(token_1())
+            .market(market)
+            .build();
+        assert!(client.orders(&request, None).await?.data.is_empty());
+        mock.assert();
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn cancel_order_should_succeed() -> anyhow::Result<()> {
         let server = MockServer::start();
         let client = create_authenticated(&server).await?;

@@ -1830,10 +1830,6 @@ mod authenticated {
             "original_size": "10.0",
             "size_matched": "2.5",
             "price": "0.45",
-            "associate_trades": [
-                "0xtradehash1",
-                "0xtradehash2"
-            ],
             "outcome": "YES",
             "created_at": "2024-01-15T12:34:56.675439+00:00",
             "expiration": "1705708800",
@@ -1864,7 +1860,6 @@ mod authenticated {
             .original_size(dec!(10.0))
             .size_matched(dec!(2.5))
             .price(dec!(0.45))
-            .associate_trades(vec!["0xtradehash1".into(), "0xtradehash2".into()])
             .outcome("YES")
             .created_at("2024-01-15T12:34:56.675439Z".parse().unwrap())
             .expiration("2024-01-20T00:00:00Z".parse().unwrap())
@@ -1895,10 +1890,6 @@ mod authenticated {
                     "original_size": "10.0",
                     "size_matched": "2.5",
                     "price": "0.45",
-                    "associate_trades": [
-                        "0xtradehash1",
-                        "0xtradehash2"
-                    ],
                     "outcome": "YES",
                     "created_at": "2024-01-15T12:34:56.675439+00:00",
                     "expiration": "1705708800",
@@ -1936,7 +1927,6 @@ mod authenticated {
             .original_size(dec!(10.0))
             .size_matched(dec!(2.5))
             .price(dec!(0.45))
-            .associate_trades(vec!["0xtradehash1".into(), "0xtradehash2".into()])
             .outcome("YES")
             .created_at("2024-01-15T12:34:56.675439Z".parse().unwrap())
             .expiration("2024-01-20T00:00:00Z".parse().unwrap())

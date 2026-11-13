@@ -252,8 +252,10 @@ impl Client {
 fn validate_source(subscription: &Subscription, payload: &Value) -> Result<()> {
     let symbol = &subscription.filter.symbol;
     if let Some(points) = payload["data"].as_array() {
-        if payload.get("symbol").is_some_and(|value| value != symbol)
-            || points.iter().any(|point| point["symbol"] != *symbol)
+        if payload["symbol"] != *symbol
+            || points
+                .iter()
+                .any(|point| point.get("symbol").is_some_and(|value| value != symbol))
         {
             return Err(Error::validation("Live price symbol mismatch"));
         }
@@ -361,7 +363,7 @@ mod tests {
     }
     #[test]
     fn preserves_snapshot_precision_and_source() {
-        let frame: PriceFrame = serde_json::from_value(json!({"v":1,"channel":"price.crypto","seq":3,"ts":1000,"snapshot":true,"payload":{"source":"chainlink","data":[{"symbol":"btcusd","full_accuracy_value":"100000.123456789123456789"}]}})).unwrap();
+        let frame: PriceFrame = serde_json::from_value(json!({"v":1,"channel":"price.crypto","seq":3,"ts":1000,"snapshot":true,"payload":{"symbol":"btcusd","source":"chainlink","data":[{"timestamp":1000,"full_accuracy_value":"100000.123456789123456789"}]}})).unwrap();
         assert_eq!(
             frame.payload["data"][0]["full_accuracy_value"],
             "100000.123456789123456789"
@@ -370,6 +372,14 @@ mod tests {
         assert!(frame.snapshot);
         let subscription = Subscription::crypto("btcusd", Some("chainlink"));
         validate_source(&subscription, &frame.payload).unwrap();
+        let mut missing_symbol = frame.payload.clone();
+        missing_symbol.as_object_mut().unwrap().remove("symbol");
+        assert!(validate_source(&subscription, &missing_symbol).is_err());
+        let mut wrong_batch = frame.payload.clone();
+        wrong_batch["symbol"] = json!("ethusd");
+        assert!(validate_source(&subscription, &wrong_batch).is_err());
+        let empty = json!({"symbol":"btcusd","source":"chainlink","data":[]});
+        validate_source(&subscription, &empty).unwrap();
         let mut mismatched = frame.payload;
         mismatched["data"][0]["symbol"] = json!("ethusd");
         assert!(validate_source(&subscription, &mismatched).is_err());

@@ -18,6 +18,10 @@ pub const USDC_DECIMALS: u32 = 6;
 const FEE_DECIMALS: u32 = 5;
 
 /// Exact single-fill fee components produced by the Kuest curve and Exchange split.
+#[expect(
+    clippy::exhaustive_structs,
+    reason = "Preserve construction and matching of the existing public fee API"
+)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct DynamicFeeBreakdown {
     pub kuest_fee_base: Decimal,
@@ -44,7 +48,7 @@ pub fn calculate_dynamic_fee_breakdown(
             "builder_taker_fee_share_bps must be between 0 and 9999",
         ));
     }
-    let exponent = u32::try_from(fee_exponent).map_err(|_| {
+    let exponent = u32::try_from(fee_exponent).map_err(|_error| {
         Error::validation(format!(
             "fee exponent {fee_exponent} must be a non-negative integer"
         ))

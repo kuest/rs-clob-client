@@ -112,7 +112,6 @@ fn bench_orders(c: &mut Criterion) {
         "original_size": "100.0",
         "size_matched": "25.0",
         "price": "0.55",
-        "associate_trades": ["trade_123"],
         "outcome": "Yes",
         "created_at": 1234567890,
         "expiration": "1234567890",

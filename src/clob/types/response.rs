@@ -410,9 +410,6 @@ pub struct OpenOrderResponse {
     pub original_size: Decimal,
     pub size_matched: Decimal,
     pub price: Option<Decimal>,
-    #[serde(default)]
-    #[serde_as(deserialize_as = "DefaultOnNull")]
-    pub associate_trades: Vec<String>,
     pub outcome: Option<String>,
     #[serde(deserialize_with = "crate::serde_helpers::deserialize_datetime_from_unix_or_rfc3339")]
     pub created_at: DateTime<Utc>,

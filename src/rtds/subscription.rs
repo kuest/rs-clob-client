@@ -33,7 +33,7 @@ impl crate::ws::traits::MessageParser<RtdsMessage> for SimpleParser {
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TopicType {
-    /// Topic name (e.g., `crypto_prices`, `comments`)
+    /// Topic name (e.g., `comments`, `activity`)
     pub topic: String,
     /// Message type (e.g., `update`, `comment_created`, `*`)
     pub msg_type: String,

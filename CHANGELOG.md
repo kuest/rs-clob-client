@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.1](https://github.com/kuest/rs-clob-client/compare/v5.0.0...v5.0.1) - 2026-11-25
+
+### Added
+
+- align REST order queries for December 14 ([#81](https://github.com/kuest/rs-clob-client/pull/81))
+
 ## [3.0.0](https://github.com/kuest/rs-clob-client/compare/v2.0.18...v3.0.0) - 2026-10-22
 
 ### Changed

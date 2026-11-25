@@ -1469,3 +1469,132 @@ mod query_string {
         assert!(qs.is_empty());
     }
 }
+
+mod market_clarifications {
+    use httpmock::{Method::GET, MockServer};
+    use kuest_client_sdk::ToQueryParams as _;
+    use kuest_client_sdk::gamma::{Client, types::request::MarketClarificationsRequest};
+    use kuest_client_sdk::types::b256;
+    use serde_json::json;
+    use url::Url;
+
+    #[test]
+    fn all_filters_serialize_using_gamma_conventions() {
+        let question = b256!("0000000000000000000000000000000000000000000000000000000000000001");
+        let tx_hash = b256!("0000000000000000000000000000000000000000000000000000000000000002");
+        let request = MarketClarificationsRequest::builder()
+            .market_ids(vec!["17".into(), tx_hash.to_string()])
+            .event_ids(vec![31, 41])
+            .question_ids(vec![question, tx_hash])
+            .tx_hashes(vec![tx_hash, question])
+            .states(vec!["success".into(), "cancelled".into()])
+            .show_in_frontend(true)
+            .limit(100)
+            .offset(200)
+            .order("tx_timestamp,id".into())
+            .ascending(false)
+            .build();
+
+        let url = Url::parse(&format!(
+            "https://gamma.example/{}",
+            request.query_params(None)
+        ))
+        .expect("valid query URL");
+        let query = url.query_pairs();
+        let values = |param: &str| {
+            query
+                .filter(|(key, _)| key == param)
+                .map(|(_, value)| value.into_owned())
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(values("market_id"), vec!["17".into(), tx_hash.to_string()]);
+        assert_eq!(values("event_id"), vec!["31", "41"]);
+        assert_eq!(
+            values("question_id"),
+            vec![question.to_string(), tx_hash.to_string()]
+        );
+        assert_eq!(
+            values("tx_hash"),
+            vec![tx_hash.to_string(), question.to_string()]
+        );
+        assert_eq!(values("state"), vec!["success", "cancelled"]);
+        assert_eq!(values("show_in_frontend"), vec!["true"]);
+        assert_eq!(values("limit"), vec!["100"]);
+        assert_eq!(values("offset"), vec!["200"]);
+        assert_eq!(values("order"), vec!["tx_timestamp,id"]);
+        assert_eq!(values("ascending"), vec!["false"]);
+        assert!(
+            MarketClarificationsRequest::default()
+                .query_params(None)
+                .is_empty()
+        );
+    }
+
+    #[tokio::test]
+    async fn public_gamma_request_returns_typed_notes_and_source_ids() -> anyhow::Result<()> {
+        let server = MockServer::start();
+        let client = Client::new(&server.base_url())?;
+        let condition = b256!("0000000000000000000000000000000000000000000000000000000000000001");
+        let mock = server.mock(|when, then| {
+            when.method(GET)
+                .path("/market-clarifications")
+                .query_param("market_id", "17")
+                .query_param("market_id", condition.to_string())
+                .query_param("limit", "2")
+                .query_param("offset", "2")
+                .header_missing("authorization");
+            then.json_body(json!([
+                {
+                    "id": 123,
+                    "marketId": 17,
+                    "eventId": 31,
+                    "questionId": condition.to_string(),
+                    "content": "Use the official announcement.",
+                    "state": "success",
+                    "clearBook": true,
+                    "showInFrontend": true,
+                    "txTimestamp": "2026-11-24T00:11:00Z",
+                    "source": "polymarket",
+                    "sourceMarketId": 45,
+                    "sourceEventId": 49,
+                    "sourceQuestionId": condition.to_string()
+                },
+                {
+                    "id": 124,
+                    "marketId": null,
+                    "conditionId": condition.to_string(),
+                    "content": "Use the final results.",
+                    "txHash": null
+                }
+            ]));
+        });
+        let request = MarketClarificationsRequest::builder()
+            .market_ids(vec!["17".into(), condition.to_string()])
+            .limit(2)
+            .offset(2)
+            .build();
+        let notes = client.market_clarifications(&request).await?;
+        assert_eq!(notes.len(), 2);
+        assert_eq!(notes[0].id, 123);
+        assert_eq!(notes[0].content, "Use the official announcement.");
+        assert_eq!(notes[0].market_id, Some(17));
+        assert_eq!(notes[0].source_market_id, Some(45));
+        assert_eq!(notes[0].source_event_id, Some(49));
+        assert_eq!(
+            notes[0].source_question_id.as_deref(),
+            Some(condition.to_string().as_str())
+        );
+        assert_eq!(notes[0].clear_book, Some(true));
+        assert_eq!(
+            notes[0].tx_timestamp.map(|value| value.to_rfc3339()),
+            Some("2026-11-24T00:11:00+00:00".into())
+        );
+        assert_eq!(notes[1].market_id, None);
+        assert_eq!(
+            notes[1].condition_id.as_deref(),
+            Some(condition.to_string().as_str())
+        );
+        mock.assert();
+        Ok(())
+    }
+}

@@ -45,13 +45,13 @@ use url::Url;
 use super::types::request::{
     CommentsByIdRequest, CommentsByUserAddressRequest, CommentsRequest, EventByIdRequest,
     EventBySlugRequest, EventTagsRequest, EventsRequest, MarketByIdRequest, MarketBySlugRequest,
-    MarketTagsRequest, MarketsRequest, PublicProfileRequest, RelatedTagsByIdRequest,
-    RelatedTagsBySlugRequest, SearchRequest, SeriesByIdRequest, SeriesListRequest, TagByIdRequest,
-    TagBySlugRequest, TagsRequest, TeamsRequest,
+    MarketClarificationsRequest, MarketTagsRequest, MarketsRequest, PublicProfileRequest,
+    RelatedTagsByIdRequest, RelatedTagsBySlugRequest, SearchRequest, SeriesByIdRequest,
+    SeriesListRequest, TagByIdRequest, TagBySlugRequest, TagsRequest, TeamsRequest,
 };
 use super::types::response::{
-    Comment, Event, HealthResponse, Market, PublicProfile, RelatedTag, SearchResults, Series,
-    SportsMarketTypesResponse, SportsMetadata, Tag, Team,
+    Comment, Event, HealthResponse, Market, MarketClarification, PublicProfile, RelatedTag,
+    SearchResults, Series, SportsMarketTypesResponse, SportsMetadata, Tag, Team,
 };
 use crate::error::Error;
 use crate::sdk_site_config;
@@ -578,6 +578,20 @@ impl Client {
     pub async fn market_tags(&self, request: &MarketTagsRequest) -> Result<Vec<Tag>> {
         self.get(&format!("markets/{}/tags", request.id), request)
             .await
+    }
+
+    /// Retrieves one page of published market clarifications from the public Gamma API.
+    ///
+    /// Pass `limit` and `offset` in the request to page through the results.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the request fails.
+    pub async fn market_clarifications(
+        &self,
+        request: &MarketClarificationsRequest,
+    ) -> Result<Vec<MarketClarification>> {
+        self.get("market-clarifications", request).await
     }
 
     /// Retrieves a list of market series with optional filtering.

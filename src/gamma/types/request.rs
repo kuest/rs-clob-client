@@ -235,6 +235,36 @@ pub struct MarketTagsRequest {
     pub id: String,
 }
 
+/// Filters for a single page of published market clarifications.
+#[skip_serializing_none]
+#[derive(Debug, Clone, Builder, Default, Serialize)]
+#[non_exhaustive]
+pub struct MarketClarificationsRequest {
+    /// Maximum number of notes (0–100, default 20 on the server).
+    pub limit: Option<i32>,
+    pub offset: Option<i32>,
+    /// Comma-separated fields to order by.
+    pub order: Option<String>,
+    pub ascending: Option<bool>,
+    /// Numeric Kuest market IDs or market condition hashes.
+    #[serde(rename = "market_id", skip_serializing_if = "Vec::is_empty")]
+    #[builder(default)]
+    pub market_ids: Vec<String>,
+    #[serde(rename = "event_id", skip_serializing_if = "Vec::is_empty")]
+    #[builder(default)]
+    pub event_ids: Vec<u64>,
+    #[serde(rename = "question_id", skip_serializing_if = "Vec::is_empty")]
+    #[builder(default)]
+    pub question_ids: Vec<B256>,
+    #[serde(rename = "tx_hash", skip_serializing_if = "Vec::is_empty")]
+    #[builder(default)]
+    pub tx_hashes: Vec<B256>,
+    #[serde(rename = "state", skip_serializing_if = "Vec::is_empty")]
+    #[builder(default)]
+    pub states: Vec<String>,
+    pub show_in_frontend: Option<bool>,
+}
+
 #[skip_serializing_none]
 #[derive(Debug, Clone, Builder, Default, Serialize)]
 #[non_exhaustive]

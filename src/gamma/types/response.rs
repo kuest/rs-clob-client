@@ -40,6 +40,36 @@ pub struct Pagination {
     pub total_results: Option<i32>,
 }
 
+/// A published note clarifying how a market settles.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+#[serde(rename_all = "camelCase")]
+#[non_exhaustive]
+pub struct MarketClarification {
+    pub id: u64,
+    pub market_id: Option<u64>,
+    /// Condition identifier returned when the Kuest market has no numeric ID.
+    pub condition_id: Option<String>,
+    pub event_id: Option<u64>,
+    pub question_id: Option<String>,
+    pub content: String,
+    pub state: Option<String>,
+    /// Records whether the source cleared orders; it does not change Kuest orders.
+    pub clear_book: Option<bool>,
+    pub notify_discord: Option<bool>,
+    pub show_in_frontend: Option<bool>,
+    pub adapter_address: Option<String>,
+    pub neg_risk_request_id: Option<String>,
+    pub tx_hash: Option<String>,
+    pub created_at: Option<DateTime<Utc>>,
+    pub queued_at: Option<DateTime<Utc>>,
+    pub scheduled_for: Option<DateTime<Utc>>,
+    pub tx_timestamp: Option<DateTime<Utc>>,
+    pub source: Option<String>,
+    pub source_market_id: Option<u64>,
+    pub source_event_id: Option<u64>,
+    pub source_question_id: Option<String>,
+}
+
 /// Health check response.
 pub type HealthResponse = String;
 

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.1.0](https://github.com/kuest/rs-clob-client/compare/v5.0.1...v5.1.0) - 2026-11-25
+
+### Added
+
+- List market clarifications through the Gamma client with pagination and market, event, question, state, and visibility filters.
+
 ## [3.0.0](https://github.com/kuest/rs-clob-client/compare/v2.0.18...v3.0.0) - 2026-10-22
 
 ### Changed

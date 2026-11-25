@@ -149,6 +149,8 @@ impl Serialize for Subscription {
 
 #[cfg(test)]
 mod tests {
+    use serde_json::json;
+
     use super::*;
     #[test]
     fn rejects_removed_price_topics() {
@@ -170,5 +172,40 @@ mod tests {
             serde_json::to_value(request).unwrap(),
             serde_json::json!({"action":"subscribe","subscriptions":[{"topic":"comments","type":"*"}]})
         );
+    }
+    #[test]
+    fn typed_comment_subscriptions_serialize_the_comment_type() {
+        let request = SubscriptionRequest::subscribe(vec![Subscription::comments(Some(
+            CommentType::CommentCreated,
+        ))]);
+        assert_eq!(
+            serde_json::to_value(request).unwrap(),
+            json!({"action":"subscribe","subscriptions":[{"topic":"comments","type":"comment_created"}]})
+        );
+    }
+
+    #[test]
+    fn unsubscribe_keeps_action_and_subscription() {
+        let request = SubscriptionRequest::unsubscribe(vec![Subscription::comments(None)]);
+        assert_eq!(
+            serde_json::to_value(request).unwrap(),
+            json!({"action":"unsubscribe","subscriptions":[{"topic":"comments","type":"*"}]})
+        );
+    }
+
+    #[test]
+    fn filters_serialize_as_json_or_fall_back_to_strings() {
+        for (input, expected) in [
+            (r#"{"market":"123"}"#, json!({"market":"123"})),
+            ("market:123", json!("market:123")),
+        ] {
+            let request = SubscriptionRequest::subscribe(vec![
+                Subscription::comments(None).with_filters(input.to_owned()),
+            ]);
+            assert_eq!(
+                serde_json::to_value(request).unwrap()["subscriptions"][0]["filters"],
+                expected
+            );
+        }
     }
 }

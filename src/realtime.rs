@@ -7,7 +7,10 @@ use bon::Builder;
 use futures::{SinkExt as _, Stream, StreamExt as _};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use tokio_tungstenite::{connect_async, tungstenite::Message};
+use tokio_tungstenite::{
+    connect_async,
+    tungstenite::{Error as SocketError, Message},
+};
 
 use crate::{
     Result,
@@ -120,9 +123,34 @@ pub enum Event {
     Control(Value),
 }
 
+const MAX_RECONNECT_DELAY: Duration = Duration::from_secs(30);
+
+struct ReconnectBackoff {
+    base: Duration,
+    window: Duration,
+}
+
+impl ReconnectBackoff {
+    fn new(base: Duration) -> Self {
+        let base = base.clamp(Duration::from_millis(1), MAX_RECONNECT_DELAY);
+        Self { base, window: base }
+    }
+
+    fn next_delay(&mut self) -> Duration {
+        let delay = rand::random_range(self.window / 2..=self.window);
+        self.window = self.window.saturating_mul(2).min(MAX_RECONNECT_DELAY);
+        delay
+    }
+
+    fn reset(&mut self) {
+        self.window = self.base;
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Client {
     endpoint: String,
+    /// Initial reconnect delay ceiling; retries jitter and back off up to 30 seconds.
     pub reconnect_delay: Duration,
     pub idle_timeout: Duration,
 }
@@ -159,6 +187,7 @@ impl Client {
         let client = self.clone();
         let request = json!({"op":"subscribe","subscriptions":[subscription]}).to_string();
         Ok(async_stream::stream! {
+            let mut backoff = ReconnectBackoff::new(client.reconnect_delay);
             loop {
                 match connect_async(&client.endpoint).await {
                     Err(error) => yield Err(Error::with_source(Kind::WebSocket, error)),
@@ -213,6 +242,10 @@ impl Client {
                                                         yield Err(Error::validation("Live price sequence gap; reconnecting for snapshot"));
                                                         break;
                                                     }
+                                                    if last_seq.is_none() {
+                                                        // A valid price, not just a handshake, confirms recovery.
+                                                        backoff.reset();
+                                                    }
                                                     last_seq = Some(frame.seq);
                                                     yield Ok(Event::Price(frame));
                                                 } else {
@@ -232,7 +265,7 @@ impl Client {
                                                 }
                                             }
                                             Some(Ok(Message::Close(_))) | None => {
-                                                yield Err(Error::validation("Live price connection closed; reconnecting")); break;
+                                                yield Err(Error::with_source(Kind::WebSocket, SocketError::ConnectionClosed)); break;
                                             }
                                             Some(Err(error)) => { yield Err(Error::with_source(Kind::WebSocket, error)); break; }
                                             _ => {}
@@ -243,7 +276,7 @@ impl Client {
                         }
                     }
                 }
-                tokio::time::sleep(client.reconnect_delay).await;
+                tokio::time::sleep(backoff.next_delay()).await;
             }
         })
     }
@@ -276,6 +309,65 @@ fn validate_source(subscription: &Subscription, payload: &Value) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reconnect_backoff_grows_jitters_caps_and_resets() {
+        let mut backoff = ReconnectBackoff::new(Duration::from_secs(1));
+        for ceiling in [1, 2, 4, 8, 16, 30, 30] {
+            let upper = Duration::from_secs(ceiling);
+            assert!((upper / 2..=upper).contains(&backoff.next_delay()));
+        }
+        backoff.reset();
+        assert!(
+            (Duration::from_millis(500)..=Duration::from_secs(1)).contains(&backoff.next_delay())
+        );
+    }
+
+    #[tokio::test]
+    async fn reports_closed_socket_as_websocket_error_and_reconnects() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            for round in 0..2 {
+                let (tcp, _) = listener.accept().await.unwrap();
+                let mut socket = tokio_tungstenite::accept_async(tcp).await.unwrap();
+                let request = socket.next().await.unwrap().unwrap().into_text().unwrap();
+                assert_eq!(
+                    serde_json::from_str::<Value>(&request).unwrap()["op"],
+                    "subscribe"
+                );
+                if round == 0 {
+                    socket.close(None).await.unwrap();
+                } else {
+                    let frame = json!({"v":1,"channel":"price.crypto","seq":1,"ts":1000,"snapshot":true,"payload":{"symbol":"btcusd","source":"chainlink"}});
+                    socket
+                        .send(Message::Text(frame.to_string().into()))
+                        .await
+                        .unwrap();
+                }
+            }
+        });
+        let mut client = Client::new(&format!("ws://{address}")).unwrap();
+        client.reconnect_delay = Duration::from_millis(1);
+        let stream = client
+            .subscribe(Subscription::crypto("btcusd", Some("chainlink")))
+            .unwrap();
+        futures::pin_mut!(stream);
+        tokio::time::timeout(Duration::from_secs(5), async {
+            assert_eq!(
+                stream.next().await.unwrap().unwrap_err().kind(),
+                Kind::WebSocket
+            );
+            assert!(matches!(
+                stream.next().await.unwrap().unwrap(),
+                Event::Price(_)
+            ));
+        })
+        .await
+        .unwrap();
+        server.await.unwrap();
+    }
+
     #[tokio::test]
     async fn reconnects_after_gap_and_resubscribes_anonymously() {
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();

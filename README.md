@@ -46,3 +46,9 @@ let client = Client::new("https://clob.kuest.com", Config::default())?
 # Ok(())
 # }
 ```
+
+## Live prices
+
+Enable `realtime` and use `realtime::Client` with `Subscription::crypto("btcusd", Some("chainlink"))` or `Subscription::crypto_twap("btcusd")`. Prices use `op/channel/filter` requests and versioned `channel/seq/ts/payload` frames at `wss://ws-live-data.kuest.com`; operator URLs can be passed to `Client::new`. No client credentials are required for public prices.
+
+`Event::Price` preserves snapshots, full-precision decimal strings, source and market status in its payload. Each subscription owns its socket; dropping the stream closes it. Transport failures and sequence gaps are returned as errors before reconnecting for a fresh snapshot. Invalid filters/source mismatches end the stream. TWAP accepts 60 seconds, not 30. Local comments/activity remain in the separate `rtds` community module; its old price helpers have been removed.

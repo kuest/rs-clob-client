@@ -3,7 +3,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::types::{Address, Decimal};
+use crate::types::Address;
 
 /// Top-level RTDS message wrapper.
 ///
@@ -11,7 +11,7 @@ use crate::types::{Address, Decimal};
 #[non_exhaustive]
 #[derive(Debug, Clone, Deserialize, Builder)]
 pub struct RtdsMessage {
-    /// The subscription topic (e.g., `crypto_prices`, `comments`)
+    /// The subscription topic (e.g., `comments`, `activity`)
     pub topic: String,
     /// The message type/event (e.g., `update`, `comment_created`)
     #[serde(rename = "type")]
@@ -23,26 +23,6 @@ pub struct RtdsMessage {
 }
 
 impl RtdsMessage {
-    /// Try to extract the payload as a crypto price update.
-    #[must_use]
-    pub fn as_crypto_price(&self) -> Option<CryptoPrice> {
-        if self.topic == "crypto_prices" {
-            serde_json::from_value(self.payload.clone()).ok()
-        } else {
-            None
-        }
-    }
-
-    /// Try to extract the payload as a Chainlink price update.
-    #[must_use]
-    pub fn as_chainlink_price(&self) -> Option<ChainlinkPrice> {
-        if self.topic == "crypto_prices_chainlink" {
-            serde_json::from_value(self.payload.clone()).ok()
-        } else {
-            None
-        }
-    }
-
     /// Try to extract the payload as a comment event.
     #[must_use]
     pub fn as_comment(&self) -> Option<Comment> {
@@ -52,30 +32,6 @@ impl RtdsMessage {
             None
         }
     }
-}
-
-/// Binance crypto price update payload.
-#[non_exhaustive]
-#[derive(Debug, Clone, Deserialize, Serialize, Builder)]
-pub struct CryptoPrice {
-    /// Trading pair symbol (lowercase concatenated, e.g., "solusdt", "btcusdt")
-    pub symbol: String,
-    /// Price timestamp in Unix milliseconds
-    pub timestamp: i64,
-    /// Current price value
-    pub value: Decimal,
-}
-
-/// Chainlink price feed update payload.
-#[non_exhaustive]
-#[derive(Debug, Clone, Deserialize, Serialize, Builder)]
-pub struct ChainlinkPrice {
-    /// Trading pair symbol (slash-separated, e.g., "eth/usd", "btc/usd")
-    pub symbol: String,
-    /// Price timestamp in Unix milliseconds
-    pub timestamp: i64,
-    /// Current price value
-    pub value: Decimal,
 }
 
 /// Comment event payload.
@@ -178,58 +134,7 @@ pub fn parse_messages(bytes: &[u8]) -> crate::Result<Vec<RtdsMessage>> {
 
 #[cfg(test)]
 mod tests {
-    use rust_decimal_macros::dec;
-
     use super::*;
-
-    #[test]
-    fn parse_crypto_price_message() {
-        let json = r#"{
-            "topic": "crypto_prices",
-            "type": "update",
-            "timestamp": 1753314064237,
-            "payload": {
-                "symbol": "solusdt",
-                "timestamp": 1753314064213,
-                "value": 189.55
-            }
-        }"#;
-
-        let msgs = parse_messages(json.as_bytes()).unwrap();
-        assert_eq!(msgs.len(), 1);
-
-        let msg = &msgs[0];
-        assert_eq!(msg.topic, "crypto_prices");
-        assert_eq!(msg.msg_type, "update");
-
-        let price = msg.as_crypto_price().unwrap();
-        assert_eq!(price.symbol, "solusdt");
-        assert_eq!(price.value, dec!(189.55));
-    }
-
-    #[test]
-    fn parse_chainlink_price_message() {
-        let json = r#"{
-            "topic": "crypto_prices_chainlink",
-            "type": "update",
-            "timestamp": 1753314064237,
-            "payload": {
-                "symbol": "eth/usd",
-                "timestamp": 1753314064213,
-                "value": 3456.78
-            }
-        }"#;
-
-        let msgs = parse_messages(json.as_bytes()).unwrap();
-        assert_eq!(msgs.len(), 1);
-
-        let msg = &msgs[0];
-        assert_eq!(msg.topic, "crypto_prices_chainlink");
-
-        let price = msg.as_chainlink_price().unwrap();
-        assert_eq!(price.symbol, "eth/usd");
-        assert_eq!(price.value, dec!(3456.78));
-    }
 
     #[test]
     fn parse_comment_message() {
@@ -269,24 +174,6 @@ mod tests {
         assert_eq!(comment.id, "1763355");
         assert_eq!(comment.body, "Test comment");
         assert_eq!(comment.profile.name, "salted.caramel");
-    }
-
-    #[test]
-    fn parse_message_array() {
-        let json = r#"[{
-            "topic": "crypto_prices",
-            "type": "update",
-            "timestamp": 1753314064237,
-            "payload": {
-                "symbol": "btcusdt",
-                "timestamp": 1753314064213,
-                "value": 67234.50
-            }
-        }]"#;
-
-        let msgs = parse_messages(json.as_bytes()).unwrap();
-        assert_eq!(msgs.len(), 1);
-        assert_eq!(msgs[0].topic, "crypto_prices");
     }
 
     #[test]

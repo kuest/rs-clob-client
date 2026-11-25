@@ -1,7 +1,7 @@
 [package]
 name = "kuest-client-sdk"
 description = "Kuest CLOB (Central Limit Order Book) API client SDK"
-version = "4.0.0"
+version = "5.0.0"
 authors = ["Kuest Engineering <engineering@kuest.com>"]
 readme = "README.md"
 repository = "https://github.com/kuest/rs-clob-client"
@@ -29,6 +29,7 @@ ctf = ["alloy/contract", "alloy/providers"]
 rfq = []
 tracing = ["dep:tracing", "dep:serde_ignored", "dep:serde_path_to_error"]
 ws = ["dep:backoff", "dep:bitflags", "dep:tokio", "dep:tokio-tungstenite"]
+realtime = ["dep:tokio", "dep:tokio-tungstenite"]
 rtds = ["dep:backoff", "dep:tokio", "dep:tokio-tungstenite"]
 heartbeats = ["dep:tokio", "dep:tokio-util"]
 
@@ -184,9 +185,9 @@ path = "examples/clob/rfq/requests.rs"
 required-features = ["clob", "rfq"]
 
 [[example]]
-name = "rtds_crypto_prices"
-path = "examples/rtds_crypto_prices.rs"
-required-features = ["rtds", "tracing"]
+name = "realtime_prices"
+path = "examples/realtime_prices.rs"
+required-features = ["realtime"]
 
 [[example]]
 name = "websocket_unsubscribe"

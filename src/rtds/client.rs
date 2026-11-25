@@ -5,7 +5,7 @@ use futures::StreamExt as _;
 
 use super::subscription::{SimpleParser, SubscriptionManager, TopicType};
 use super::types::request::Subscription;
-use super::types::response::{ChainlinkPrice, Comment, CommentType, CryptoPrice, RtdsMessage};
+use super::types::response::{Comment, CommentType, RtdsMessage};
 use crate::Result;
 use crate::auth::state::{Authenticated, State, Unauthenticated};
 use crate::auth::{Credentials, Normal};
@@ -20,28 +20,6 @@ use crate::ws::connection::ConnectionState;
 /// - [`Client<Unauthenticated>`]: All streams, comments without auth
 /// - [`Client<Authenticated<Normal>>`]: All streams, comments with CLOB auth
 ///
-/// # Examples
-///
-/// ```rust, no_run
-/// use kuest_client_sdk::rtds::Client;
-/// use futures::StreamExt;
-///
-/// #[tokio::main]
-/// async fn main() -> anyhow::Result<()> {
-///     let client = Client::default();
-///
-///     // Subscribe to BTC and ETH prices from Binance
-///     let symbols = vec!["btcusdt".to_owned(), "ethusdt".to_owned()];
-///     let stream = client.subscribe_crypto_prices(Some(symbols))?;
-///     let mut stream = Box::pin(stream);
-///
-///     while let Some(price) = stream.next().await {
-///         println!("Price: {:?}", price?);
-///     }
-///
-///     Ok(())
-/// }
-/// ```
 #[derive(Clone)]
 pub struct Client<S: State = Unauthenticated> {
     inner: Arc<ClientInner<S>>,
@@ -137,74 +115,6 @@ impl Client<Unauthenticated> {
 
 // Methods available in any state
 impl<S: State> Client<S> {
-    /// Subscribes to real-time cryptocurrency price updates from Binance.
-    ///
-    /// Returns a stream of cryptocurrency prices for the specified trading pairs.
-    /// If no symbols are provided, subscribes to all available cryptocurrency pairs.
-    /// Prices are sourced from Binance and updated in real-time.
-    ///
-    /// # Arguments
-    ///
-    /// * `symbols` - Optional list of trading pair symbols (e.g., `["BTCUSDT", "ETHUSDT"]`).
-    ///   If `None`, subscribes to all available pairs.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the subscription cannot be created or the WebSocket
-    /// connection fails.
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// use kuest_client_sdk::rtds::Client;
-    /// use kuest_client_sdk::ws::config::Config;
-    /// use futures::StreamExt;
-    /// use tokio::pin;
-    ///
-    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-    /// let client = Client::new("wss://rtds.kuest.com", Config::default())?;
-    /// let stream = client.subscribe_crypto_prices(Some(vec!["BTCUSDT".to_string()]))?;
-    ///
-    /// pin!(stream);
-    ///
-    /// while let Some(price_result) = stream.next().await {
-    ///     let price = price_result?;
-    ///     println!("BTC Price: ${}", price.value);
-    /// }
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn subscribe_crypto_prices(
-        &self,
-        symbols: Option<Vec<String>>,
-    ) -> Result<impl Stream<Item = Result<CryptoPrice>>> {
-        let subscription = Subscription::crypto_prices(symbols);
-        let stream = self.inner.subscriptions.subscribe(subscription)?;
-
-        Ok(stream.filter_map(|msg_result| async move {
-            match msg_result {
-                Ok(msg) => msg.as_crypto_price().map(Ok),
-                Err(e) => Some(Err(e)),
-            }
-        }))
-    }
-
-    /// Subscribe to Chainlink price feed updates.
-    pub fn subscribe_chainlink_prices(
-        &self,
-        symbol: Option<String>,
-    ) -> Result<impl Stream<Item = Result<ChainlinkPrice>>> {
-        let subscription = Subscription::chainlink_prices(symbol);
-        let stream = self.inner.subscriptions.subscribe(subscription)?;
-
-        Ok(stream.filter_map(|msg_result| async move {
-            match msg_result {
-                Ok(msg) => msg.as_chainlink_price().map(Ok),
-                Err(e) => Some(Err(e)),
-            }
-        }))
-    }
-
     /// Subscribe to raw RTDS messages for a custom topic/type combination.
     pub fn subscribe_raw(
         &self,
@@ -231,46 +141,6 @@ impl<S: State> Client<S> {
     #[must_use]
     pub fn subscription_count(&self) -> usize {
         self.inner.subscriptions.subscription_count()
-    }
-
-    /// Unsubscribe from Binance crypto price updates.
-    ///
-    /// This decrements the reference count for the `crypto_prices` topic. Only sends
-    /// an unsubscribe request to the server when no other streams are using this topic.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the unsubscribe request fails.
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// use kuest_client_sdk::rtds::Client;
-    ///
-    /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
-    /// let client = Client::default();
-    /// let _stream = client.subscribe_crypto_prices(None)?;
-    /// // Later...
-    /// client.unsubscribe_crypto_prices()?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn unsubscribe_crypto_prices(&self) -> Result<()> {
-        let topic = TopicType::new("crypto_prices".to_owned(), "update".to_owned());
-        self.inner.subscriptions.unsubscribe(&[topic])
-    }
-
-    /// Unsubscribe from Chainlink price feed updates.
-    ///
-    /// This decrements the reference count for the chainlink topic. Only sends
-    /// an unsubscribe request to the server when no other streams are using this topic.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the unsubscribe request fails.
-    pub fn unsubscribe_chainlink_prices(&self) -> Result<()> {
-        let topic = TopicType::new("crypto_prices_chainlink".to_owned(), "*".to_owned());
-        self.inner.subscriptions.unsubscribe(&[topic])
     }
 
     /// Unsubscribe from comment events.

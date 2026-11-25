@@ -3,40 +3,8 @@
     reason = "Re-exported names intentionally match their modules for API clarity"
 )]
 
-//! Real-Time Data Socket (RTDS) client for streaming Kuest data.
-//!
-//! **Feature flag:** `rtds` (required to use this module)
-//!
-//! This module provides a WebSocket-based client for subscribing to real-time
-//! data streams from Kuest's RTDS service.
-//!
-//! # Available Streams
-//!
-//! - **Crypto Prices (Binance)**: Real-time cryptocurrency price data from Binance
-//! - **Crypto Prices (Chainlink)**: Price data from Chainlink oracle networks
-//! - **Comments**: Comment events including creations, removals, and reactions
-//!
-//! # Example
-//!
-//! ```rust, no_run
-//! use kuest_client_sdk::rtds::Client;
-//! use futures::StreamExt;
-//!
-//! #[tokio::main]
-//! async fn main() -> anyhow::Result<()> {
-//!     let client = Client::default();
-//!
-//!     // Subscribe to BTC prices
-//!     let stream = client.subscribe_crypto_prices(Some(vec!["btcusdt".to_owned()]))?;
-//!     let mut stream = Box::pin(stream);
-//!
-//!     while let Some(price) = stream.next().await {
-//!         println!("BTC Price: {:?}", price?);
-//!     }
-//!
-//!     Ok(())
-//! }
-//! ```
+//! Community live-data client for comments and activity.
+//! Price channels use `realtime::Client` with the `realtime` feature.
 
 pub mod client;
 pub mod error;
@@ -48,6 +16,4 @@ pub use client::Client;
 pub use error::RtdsError;
 pub use subscription::SubscriptionInfo;
 pub use types::request::{Subscription, SubscriptionAction, SubscriptionRequest};
-pub use types::response::{
-    ChainlinkPrice, Comment, CommentProfile, CommentType, CryptoPrice, RtdsMessage,
-};
+pub use types::response::{Comment, CommentProfile, CommentType, RtdsMessage};
